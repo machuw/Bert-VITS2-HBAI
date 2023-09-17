@@ -14,12 +14,16 @@ def process_line(line):
     if torch.cuda.is_available():
         gpu_id = rank % torch.cuda.device_count()
         device = torch.device(f"cuda:{gpu_id}")
-    wav_path, _, language_str, text, phones, tone, word2ph = line.strip().split("|")
-    phone = phones.split(" ")
-    tone = [int(i) for i in tone.split(" ")]
-    word2ph = [int(i) for i in word2ph.split(" ")]
-    word2ph = [i for i in word2ph]
-    phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
+    try:
+        wav_path, _, language_str, text, phones, tone, word2ph = line.strip().split("|")
+        phone = phones.split(" ")
+        tone = [int(i) for i in tone.split(" ")]
+        word2ph = [int(i) for i in word2ph.split(" ")]
+        word2ph = [i for i in word2ph]
+        phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
+    except Exception as error:
+        print("err!", line, error)
+        return
 
     if hps.data.add_blank:
         phone = commons.intersperse(phone, 0)

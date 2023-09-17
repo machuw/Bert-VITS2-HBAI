@@ -2,9 +2,11 @@
 
 import os
 import torch
+import shutil
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
@@ -40,21 +42,60 @@ torch.backends.cuda.enable_mem_efficient_sdp(
     True
 )  # Not available if torch version is lower than 2.0
 torch.backends.cuda.enable_math_sdp(True)
+
 global_step = 0
+first_device = 1
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
 
-def run():
-    dist.init_process_group(
-        backend="gloo",
-        init_method="env://",  # Due to some training problem,we proposed to use gloo instead of nccl.
-    )  # Use torchrun instead of mp.spawn
-    rank = dist.get_rank()
-    n_gpus = dist.get_world_size()
+def main():
+    """Assume Single Node Multi GPUs Training Only"""
+    assert torch.cuda.is_available(), "CPU training is not allowed."
+
+    # 释放缓存
+    #torch.cuda.empty_cache()
+
+    n_gpus = torch.cuda.device_count()
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '65280'
+    #os.environ['MASTER_PORT'] = '65014'
+
+    print("start train 1", n_gpus)
+
     hps = utils.get_hparams()
+    if not hps.cont:
+           shutil.copy('./pretrained_models/D_0.pth','./logs/OUTPUT_MODEL/D_0.pth')
+           shutil.copy('./pretrained_models/G_0.pth','./logs/OUTPUT_MODEL/G_0.pth')
+           shutil.copy('./pretrained_models/DUR_0.pth','./logs/OUTPUT_MODEL/DUR_0.pth')
+    mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
+    print("start train 2")
+    #run()
+
+
+def run(rank, n_gpus, hps):
+#def run():
+    print("start train 3")
+    dist.init_process_group(
+        backend= 'gloo' if os.name == 'nt' else 'nccl', 
+        init_method='env://', 
+        world_size=n_gpus,
+        rank=rank)
+
+    #dist.init_process_group(
+    #    backend="nccl",
+    #    init_method="env://",  # Due to some training problem,we proposed to use gloo instead of nccl.
+    #    rank=0,
+    #    world_size=4
+    #)  # Use torchrun instead of mp.spawn
+    print("start train 4")
+    #rank = dist.get_rank()
+    #n_gpus = dist.get_world_size()
+    print(rank, n_gpus)
+    #hps = utils.get_hparams()
     torch.manual_seed(hps.train.seed)
     torch.cuda.set_device(rank)
     global global_step
-    if rank == 0:
+    if rank == first_device:
         logger = utils.get_logger(hps.model_dir)
         logger.info(hps)
         utils.check_git_hash(hps.model_dir)
@@ -80,7 +121,7 @@ def run():
         persistent_workers=True,
         prefetch_factor=4,
     )  # DataLoader config could be adjusted.
-    if rank == 0:
+    if rank == first_device:
         eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(
             eval_dataset,
@@ -162,6 +203,7 @@ def run():
     if net_dur_disc is not None:
         net_dur_disc = DDP(net_dur_disc, device_ids=[rank], find_unused_parameters=True)
     try:
+        print("load model.......")
         if net_dur_disc is not None:
             _, _, dur_resume_lr, epoch_str = utils.load_checkpoint(
                 utils.latest_checkpoint_path(hps.model_dir, "DUR_*.pth"),
@@ -171,6 +213,7 @@ def run():
                 if "skip_optimizer" in hps.train
                 else True,
             )
+            print("load DUR......")
             _, optim_g, g_resume_lr, epoch_str = utils.load_checkpoint(
                 utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"),
                 net_g,
@@ -179,6 +222,7 @@ def run():
                 if "skip_optimizer" in hps.train
                 else True,
             )
+            print("load G......")
             _, optim_d, d_resume_lr, epoch_str = utils.load_checkpoint(
                 utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"),
                 net_d,
@@ -187,6 +231,7 @@ def run():
                 if "skip_optimizer" in hps.train
                 else True,
             )
+            print("load D......")
             if not optim_g.param_groups[0].get("initial_lr"):
                 optim_g.param_groups[0]["initial_lr"] = g_resume_lr
             if not optim_d.param_groups[0].get("initial_lr"):
@@ -216,7 +261,7 @@ def run():
     scaler = GradScaler(enabled=hps.train.fp16_run)
 
     for epoch in range(epoch_str, hps.train.epochs + 1):
-        if rank == 0:
+        if rank == first_device:
             train_and_evaluate(
                 rank,
                 epoch,
@@ -400,7 +445,7 @@ def train_and_evaluate(
         scaler.step(optim_g)
         scaler.update()
 
-        if rank == 0:
+        if rank == first_device:
             if global_step % hps.train.log_interval == 0:
                 lr = optim_g.param_groups[0]["lr"]
                 losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
@@ -491,7 +536,7 @@ def train_and_evaluate(
 
         global_step += 1
 
-    if rank == 0:
+    if rank == first_device:
         logger.info("====> Epoch: {}".format(epoch))
 
 
@@ -589,4 +634,5 @@ def evaluate(hps, generator, eval_loader, writer_eval):
 
 
 if __name__ == "__main__":
-    run()
+    main()
+    #run()

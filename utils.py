@@ -195,7 +195,21 @@ def get_hparams(init=True):
         default="./configs/base.json",
         help="JSON file for configuration",
     )
-    parser.add_argument("-m", "--model", type=str, required=True, help="Model name")
+    parser.add_argument(
+        "-m", 
+        "--model", 
+        type=str, 
+        default="./OUTPUT_MODEL",
+        help="Model name",
+    )
+
+    parser.add_argument(
+        "--cont", 
+        dest="cont", 
+        #action="store_true", 
+        default=False, 
+        help="whether to continue training on the latest checkpoint",
+    )
 
     args = parser.parse_args()
     model_dir = os.path.join("./logs", args.model)
@@ -217,6 +231,7 @@ def get_hparams(init=True):
 
     hparams = HParams(**config)
     hparams.model_dir = model_dir
+    hparams.cont = args.cont
     return hparams
 
 
