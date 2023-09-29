@@ -8,18 +8,19 @@ import click
 from text.cleaner import clean_text
 import re
 import os
+import random
 
-def keep_english_chinese(s):
-    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5]", "", s)
+def keep_english_chinese_japanese(s):
+    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5\u3040-\u30FF\u31F0-\u31FF]", "", s)
 
-def extract_files_content(base_path, cleaned_path, spk_pos=2):
+def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2):
     file_data = {}
     out_file = open(cleaned_path, "w", encoding="utf-8")
 
     # 遍历base_path下的所有文件
-    try:
-        for root, dirs, files in os.walk(base_path):
-            for file in files:
+    for root, dirs, files in os.walk(base_path):
+        for file in files:
+            try:
                 file_path = os.path.join(root, file)
 
                 if ".lab" not in file_path:
@@ -32,13 +33,11 @@ def extract_files_content(base_path, cleaned_path, spk_pos=2):
 
                 # 获取人物名字
                 spk = file_path.strip().split("/")[spk_pos]
-                spk = keep_english_chinese(spk)
+                spk = keep_english_chinese_japanese(spk)
 
                 # 读取文件内容
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-
-                language = "ZH"
 
                 norm_text, phones, tones, word2ph = clean_text(content, language)
 
@@ -53,8 +52,8 @@ def extract_files_content(base_path, cleaned_path, spk_pos=2):
                         " ".join([str(i) for i in word2ph]),
                     )
                 )
-    except Exception as error:
-        print("err!", file_path, error)
+            except Exception as error:
+                print("extract_files_content err!", file_path, error)
 
 
 def create_train_and_val_list(
@@ -64,8 +63,7 @@ def create_train_and_val_list(
         spk_utt_map: dict, 
         spk_id_map: dict,
         max_text_len: int,
-        val_per_spk: int,
-        max_val_total: int):
+        sample_rate: float):
     current_sid = 0
     
     with open(path, encoding="utf-8") as f:
@@ -82,19 +80,17 @@ def create_train_and_val_list(
                     spk_id_map[spk] = current_sid
                     current_sid += 1
             except Exception as error:
-                print("err!", line, error)
+                print("create_train_and_val_list err!", line, error)
 
     train_list = []
     val_list = []
 
     for spk, utts in spk_utt_map.items():
         shuffle(utts)
-        val_list += utts[:val_per_spk]
-        train_list += utts[val_per_spk:]
+        val_size = int(len(utts) * sample_rate)
 
-    if len(val_list) > max_val_total:
-        train_list += val_list[max_val_total:]
-        val_list = val_list[:max_val_total]
+        val_list += random.sample(utts, val_size)
+        train_list += [sample for sample in utts if sample not in val_list]
 
     with open(train_path, "w", encoding="utf-8") as f:
         for line in train_list:
@@ -108,17 +104,17 @@ def create_train_and_val_list(
 
 @click.command()
 @click.option("--base-path", default="./Chinese")
-@click.option("--cleaned-path", default="filelists/temp.list.cleaned")
-@click.option("--train-path", default="filelists/train.list")
-@click.option("--val-path", default="filelists/val.list")
+@click.option("--cleaned-path", default="filelists/zh.list.cleaned")
+@click.option("--train-path", default="filelists/train.zh.list")
+@click.option("--val-path", default="filelists/val.zh.list")
 @click.option(
     "--config-path",
-    default="configs/config.json",
+    default="configs/config.zh.json",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
 )
-@click.option("--max-text-len", default=50)
-@click.option("--val-per-spk", default=4)
-@click.option("--max-val-total", default=100)
+@click.option("--max-text-len", default=500)
+@click.option("--language", default="ZH")
+@click.option("--sample-rate", default=0.01)
 @click.option("--clean/--no-clean", default=True)
 def main(
     base_path: str,
@@ -127,12 +123,12 @@ def main(
     val_path: str,
     config_path: str,
     max_text_len: int,
-    val_per_spk: int,
-    max_val_total: int,
+    language: str,
+    sample_rate: float,
     clean: bool,
 ):
     if clean:
-        extract_files_content(base_path, cleaned_path)
+        extract_files_content(base_path, cleaned_path, language)
 
     spk_utt_map = defaultdict(list)
     spk_id_map = {}
@@ -144,8 +140,7 @@ def main(
         spk_utt_map,
         spk_id_map,
         max_text_len,
-        val_per_spk,
-        max_val_total)
+        sample_rate)
 
     config = json.load(open(config_path, encoding="utf-8"))
     config["data"]["spk2id"] = spk_id_map

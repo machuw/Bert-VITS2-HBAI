@@ -211,6 +211,13 @@ def get_hparams(init=True):
         help="whether to continue training on the latest checkpoint",
     )
 
+    parser.add_argument(
+        "--local-rank", 
+        type=int, 
+        default=0,
+        help="local rank by pytorch",
+    )
+
     args = parser.parse_args()
     model_dir = os.path.join("./logs", args.model)
 
@@ -232,6 +239,7 @@ def get_hparams(init=True):
     hparams = HParams(**config)
     hparams.model_dir = model_dir
     hparams.cont = args.cont
+    hparams.local_rank = args.local_rank
     return hparams
 
 

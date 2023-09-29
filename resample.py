@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     for speaker in os.listdir(args.in_dir):
         spk_dir = os.path.join(args.in_dir, speaker)
+        print(spk_dir)
         if os.path.isdir(spk_dir):
             print(spk_dir)
             for _ in tqdm(

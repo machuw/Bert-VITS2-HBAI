@@ -1,0 +1,2 @@
+ZH: /usr/bin/env /root/miniconda3/envs/bert-vits2/bin/python /root/miniconda3/envs/bert-vits2/lib/python3.10/site-packages/torch/distributed/launch.py --nproc-per-node=1 --use_env train_ms.py -c /root/autodl-tmp/models/Bert-VITS2-HBAI/configs/config.zh.json
+JP: /usr/bin/env /root/miniconda3/envs/bert-vits2/bin/python /root/miniconda3/envs/bert-vits2/lib/python3.10/site-packages/torch/distributed/launch.py --nproc-per-node=1 --use_env --master_port 62580 train_ms.py -c /root/autodl-tmp/models/Bert-VITS2-HBAI/configs/config.jp.json -m JP_MODEL 

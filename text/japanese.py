@@ -544,9 +544,9 @@ def distribute_phone(n_phone, n_word):
 
 tokenizer = AutoTokenizer.from_pretrained("./bert/bert-base-japanese-v3")
 
-
 def g2p(norm_text):
     tokenized = tokenizer.tokenize(norm_text)
+    #tokenized = MeCab.Tagger("-Owakati").parse(norm_text).split()[:-1]
     phs = []
     ph_groups = []
     for t in tokenized:
@@ -557,6 +557,7 @@ def g2p(norm_text):
     word2ph = []
     for group in ph_groups:
         phonemes = kata2phoneme(text2kata("".join(group)))
+        #print("phonemes", text2kata("".join(group)), phonemes)
         # phonemes = [i for i in phonemes if i in symbols]
         for i in phonemes:
             assert i in symbols, (group, norm_text, tokenized)

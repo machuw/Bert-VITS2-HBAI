@@ -6,6 +6,7 @@ from tqdm import tqdm
 from text import cleaned_text_to_sequence, get_bert
 import argparse
 import torch.multiprocessing as mp
+import os
 
 
 def process_line(line):
@@ -16,6 +17,9 @@ def process_line(line):
         device = torch.device(f"cuda:{gpu_id}")
     try:
         wav_path, _, language_str, text, phones, tone, word2ph = line.strip().split("|")
+        bert_path = wav_path.replace(".wav", ".bert.pt")
+        if os.path.exists(bert_path):
+            return
         phone = phones.split(" ")
         tone = [int(i) for i in tone.split(" ")]
         word2ph = [int(i) for i in word2ph.split(" ")]
@@ -33,8 +37,6 @@ def process_line(line):
             word2ph[i] = word2ph[i] * 2
         word2ph[0] += 1
 
-    bert_path = wav_path.replace(".wav", ".bert.pt")
-
     try:
         bert = torch.load(bert_path)
         assert bert.shape[-1] == len(phone)
@@ -47,7 +49,7 @@ def process_line(line):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=str, default="configs/config.json")
-    parser.add_argument("--num_processes", type=int, default=2)
+    parser.add_argument("--num_processes", type=int, default=1)
     args = parser.parse_args()
     config_path = args.config
     hps = utils.get_hparams_from_file(config_path)
