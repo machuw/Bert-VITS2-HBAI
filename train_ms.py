@@ -11,8 +11,8 @@ from torch.cuda.amp import autocast, GradScaler
 from tqdm import tqdm
 import logging
 
-#logging.getLogger("numba").setLevel(logging.WARNING)
-logging.getLogger("numba").setLevel(logging.DEBUG)
+logging.getLogger("numba").setLevel(logging.WARNING)
+#logging.getLogger("numba").setLevel(logging.DEBUG)
 import commons
 import utils
 from data_utils import (
@@ -43,7 +43,11 @@ torch.backends.cuda.enable_mem_efficient_sdp(
 torch.backends.cuda.enable_math_sdp(True)
 global_step = 0
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+#os.environ['MASTER_ADDR'] = 'localhost'
+#os.environ['MASTER_PORT'] = '62580'
+#os.environ['RANK'] = '0'
+#os.environ['WORLD_SIZE'] = '2'
 
 def run():
     dist.init_process_group(
@@ -254,6 +258,10 @@ def run():
         except Exception as e:
             print(e)
 
+def train_log(logger, rank, logs):
+    if rank == 0:
+        logger.debug(logs)
+
 
 def train_and_evaluate(
     rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers
@@ -307,7 +315,7 @@ def train_and_evaluate(
         ja_bert = ja_bert.cuda(rank, non_blocking=True)
 
         with autocast(enabled=hps.train.fp16_run):
-            logger.debug("begin net_g forword, rank {} epoch {} batch {} step {}".format(rank, epoch, batch_idx, global_step))
+            train_log(logger, rank, "begin net_g forword, rank {} epoch {} batch {} step {}".format(rank, epoch, batch_idx, global_step))
             (
                 y_hat,
                 l_length,
@@ -328,7 +336,7 @@ def train_and_evaluate(
                 bert,
                 ja_bert,
             )
-            logger.debug("end net_g forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+            train_log(logger, rank, "end net_g forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             mel = spec_to_mel_torch(
                 spec,
                 hps.data.filter_length,
@@ -355,7 +363,7 @@ def train_and_evaluate(
                 y, ids_slice * hps.data.hop_length, hps.train.segment_size
             )  # slice
 
-            logger.debug("begin net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+            train_log(logger, rank, "begin net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             # Discriminator
             y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
             with autocast(enabled=False):
@@ -380,7 +388,7 @@ def train_and_evaluate(
                 scaler.unscale_(optim_dur_disc)
                 commons.clip_grad_value_(net_dur_disc.parameters(), None)
                 scaler.step(optim_dur_disc)
-            logger.debug("end net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+            train_log(logger, rank, "end net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
 
         optim_d.zero_grad()
         scaler.scale(loss_disc_all).backward()
@@ -390,15 +398,15 @@ def train_and_evaluate(
 
         with autocast(enabled=hps.train.fp16_run):
             # Generator
-            logger.debug("begin net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+            train_log(logger, rank, "begin net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
-            logger.debug("end net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+            train_log(logger, rank, "end net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             if net_dur_disc is not None:
-                logger.debug("begin net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+                train_log(logger, rank, "begin net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
                 y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw, logw_)
-                logger.debug("end net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+                train_log(logger, rank, "end net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             with autocast(enabled=False):
-                logger.debug("begin net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+                train_log(logger, rank, "begin net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
                 loss_dur = torch.sum(l_length.float())
                 loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
                 loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
@@ -409,7 +417,7 @@ def train_and_evaluate(
                 if net_dur_disc is not None:
                     loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
                     loss_gen_all += loss_dur_gen
-                logger.debug("end net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
+                train_log(logger, rank, "end net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)

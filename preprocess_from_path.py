@@ -107,8 +107,8 @@ def create_train_and_val_list(
 
 
 @click.command()
-@click.option("--base-path", default="./Chinese")
-@click.option("--cleaned-path", default="filelists/temp.list.cleaned")
+@click.option("--base-path", default="/root/autodl-tmp/datasets/Genshin/English")
+@click.option("--cleaned-path", default="filelists/en.genshine.list.cleaned")
 @click.option("--train-path", default="filelists/train.list")
 @click.option("--val-path", default="filelists/val.list")
 @click.option(

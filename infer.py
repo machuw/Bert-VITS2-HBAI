@@ -2,6 +2,7 @@
 
 import sys, os
 import logging
+import re
 
 logging.getLogger("numba").setLevel(logging.WARNING)
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
@@ -9,7 +10,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 logging.basicConfig(
-    level=logging.INFO, format="| %(asctime)s | %(name)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="| %(name)s | %(levelname)s | %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ from text import cleaned_text_to_sequence, get_bert
 from text.cleaner import clean_text
 import gradio as gr
 import webbrowser
+import wave
+from io import BytesIO
+from scipy.io import wavfile
 
 net_g = None
 
@@ -36,7 +40,6 @@ else:
 
 def get_text(text, language_str, hps):
     norm_text, phone, tone, word2ph = clean_text(text, language_str)
-    logger.info(norm_text, phone, tone, word2ph)
     phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
 
     if hps.data.add_blank:
@@ -110,7 +113,6 @@ def infer(text, sdp_ratio, noise_scale, noise_scale_w, length_scale, sid, langua
 def tts_fn(
     text, speaker, sdp_ratio, noise_scale, noise_scale_w, length_scale, language
 ):
-    logger.info("text: {} speaker: {}".format(text, speaker))
     with torch.no_grad():
         audio = infer(
             text,
@@ -128,7 +130,7 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/EN_MODEL/G_66000.pth", help="path of your model"
+        "-m", "--model", default="./logs/EN_MODEL/G_64000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
@@ -172,40 +174,19 @@ if __name__ == "__main__":
     speaker_ids = hps.data.spk2id
     speakers = list(speaker_ids.keys())
     languages = ["ZH", "JP", "EN"]
-    with gr.Blocks() as app:
-        with gr.Row():
-            with gr.Column():
-                text = gr.TextArea(
-                    label="Text",
-                    placeholder="Input Text Here",
-                    value="吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。",
-                )
-                speaker = gr.Dropdown(
-                    choices=speakers, value=speakers[0], label="Speaker"
-                )
-                sdp_ratio = gr.Slider(
-                    minimum=0, maximum=1, value=0.2, step=0.1, label="SDP Ratio"
-                )
-                noise_scale = gr.Slider(
-                    minimum=0.1, maximum=2, value=0.5, step=0.1, label="Noise Scale"
-                )
-                noise_scale_w = gr.Slider(
-                    minimum=0.1, maximum=2, value=0.9, step=0.1, label="Noise Scale W"
-                )
-                length_scale = gr.Slider(
-                    minimum=0.1, maximum=2, value=1, step=0.1, label="Length Scale"
-                )
-                language = gr.Dropdown(
-                    choices=languages, value=languages[0], label="Language"
-                )
-                btn = gr.Button("Generate!", variant="primary")
-            with gr.Column():
-                text_output = gr.Textbox(label="Message")
-                audio_output = gr.Audio(label="Output Audio")
-
-        btn.click(
-            tts_fn,
-            inputs=[
+    
+    speaker = "阿黛尔"
+    sdp_ratio = 0.2
+    noise_scale = 0.6
+    noise_scale_w = 0.8
+    length_scale = 1
+    language = "EN"
+    
+    #text = "Ah, my brain is short-circuited. You can right-click on me, then find the relink button next to the text box, and try clicking it."
+    with open("default_text/sam.txt") as f:
+        for line in f.readlines():
+            text = line.strip()
+            text_output, audio_output = tts_fn(
                 text,
                 speaker,
                 sdp_ratio,
@@ -213,10 +194,9 @@ if __name__ == "__main__":
                 noise_scale_w,
                 length_scale,
                 language,
-            ],
-            outputs=[text_output, audio_output],
-        )
+            )
 
-    #webbrowser.open("http://127.0.0.1:7859")
-    #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7859)
+            filename = "./audio/sam/" + re.sub("[?]","",text) + ".wav"
+            wavfile.write(filename, hps.data.sampling_rate, audio_output[1])
+            #wavfile.write(filename, 44100, audio_output[1])
+

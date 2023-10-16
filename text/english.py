@@ -3,6 +3,8 @@ import os
 import re
 from g2p_en import G2p
 
+from transformers import AutoTokenizer
+
 from text import symbols
 
 current_file_path = os.path.dirname(__file__)
@@ -175,6 +177,39 @@ def text_normalize(text):
     # todo: eng text normalize
     return text
 
+tokenizer = AutoTokenizer.from_pretrained("./bert/bert-large-uncased-whole-word-masking")
+
+def g2p_new(text):
+    phones = []
+    tones = []
+    word2ph = []
+    #words = re.split(r"([,;.\-\?\!\s+])", text)
+    words = tokenizer.tokenize(text)
+    for w in words:
+        if w.upper() in eng_dict:
+            phns, tns = refine_syllables(eng_dict[w.upper()])
+        else:
+            phone_list = list(filter(lambda p: p != " ", _g2p(w)))
+            phns = []
+            tns = []
+            for ph in phone_list:
+                if ph in arpa:
+                    ph, tn = refine_ph(ph)
+                    phns.append(ph)
+                    tns.append(tn4)
+                else:
+                    phns.append(ph)
+                    tns.append(0)
+        phones += phns 
+        tones += tns 
+        word2ph.append(len(phns))
+    # todo: implement word2ph
+    #word2ph = [1 for i in phones]
+
+    phones = ["_"] + [post_replace_ph(i) for i in phones] + ["_"]
+    tones = [0] + tones + [0]
+    word2ph = [1] + word2ph + [1]
+    return phones, tones, word2ph
 
 def g2p(text):
     phones = []
@@ -201,11 +236,32 @@ def g2p(text):
     phones = [post_replace_ph(i) for i in phones]
     return phones, tones, word2ph
 
+def g2p_en_word(word):
+    if word.upper() in eng_dict:
+        phns, tns = refine_syllables(eng_dict[word.upper()])
+    else:
+        phone_list = list(filter(lambda p: p != " ", _g2p(word)))
+        phns = []
+        tns = []
+        for ph in phone_list:
+            if ph in arpa:
+                ph, tn = refine_ph(ph)
+                phns.append(ph)
+                tns.append(tn)
+            else:
+                phns.append(ph)
+                tns.append(0)
+    phones = [post_replace_ph(i) for i in phns] 
+    tones = tns 
+    word2ph = [len(phns)]
+    return phones, tones, word2ph
+
 
 if __name__ == "__main__":
     # print(get_dict())
     # print(eng_word_to_phoneme("hello"))
-    print(g2p("In this paper, we propose 1 DSPGAN, a GAN-based universal vocoder."))
+    #print(g2p("In this paper, we propose 1 DSPGAN, a GAN-based universal vocoder."))
+    print(g2p("Absolutely! I've said it before, and I'll say it again: The Phantom Weasel never acts as you expect. He must have faked his own death ten years ago using a body double!"))
     # all_phones = set()
     # for k, syllables in eng_dict.items():
     #     for group in syllables:

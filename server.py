@@ -107,7 +107,7 @@ def wav2(i, o, format):
 
 
 # Load Generator
-hps = utils.get_hparams_from_file("./configs/config.json")
+hps = utils.get_hparams_from_file("./configs/config.zh.json")
 
 dev = "cuda"
 net_g = SynthesizerTrn(
@@ -119,7 +119,7 @@ net_g = SynthesizerTrn(
 ).to(dev)
 _ = net_g.eval()
 
-_ = utils.load_checkpoint("logs/G_649000.pth", net_g, None, skip_optimizer=True)
+_ = utils.load_checkpoint("logs/OUTPUT_MODEL/G_847000.pth", net_g, None, skip_optimizer=True)
 
 
 @app.route("/")
