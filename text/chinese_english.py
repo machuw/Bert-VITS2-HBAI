@@ -67,7 +67,7 @@ def replace_punctuation(text):
     return replaced_text
 
 
-def g2p(text):
+def g2p_old(text):
     pattern = r"(?<=[{0}])\s*".format("".join(punctuation))
     sentences = [i for i in re.split(pattern, text) if i.strip() != ""]
     phones, tones, word2ph = _g2p(sentences)
@@ -78,14 +78,16 @@ def g2p(text):
     word2ph = [1] + word2ph + [1]
     return phones, tones, word2ph
 
-def g2p_v2(text):
+def g2p(text):
     phones_list = []
     tones_list = []
     word2ph_list = []
     seg_cut = psg.lcut(text)
     seg_cut = tone_modifier.pre_merge_for_modify(seg_cut)
     for word, pos in seg_cut:
-        if pos == "eng":
+        if word.isspace():
+            continue
+        if bool(re.match('^[a-zA-Z\s]+$', word)):
             phone, tone, word2ph = _g2p_en(word, pos)
         else:
             phone, tone, word2ph = _g2p_zh(word, pos)
@@ -276,16 +278,23 @@ def get_bert_feature(text, word2ph):
 
 
 if __name__ == "__main__":
-    from text.chinese_bert import get_bert_feature
+    from text.chinese_english_bert import get_bert_feature
 
-    text = "啊！但是《原神》是由,米哈\游自主，  [研发]的一款全.新开放世界.冒险游戏"
-    text = "蔡徐坤喜欢 唱 跳 rap 篮球 music和NBA"
-    text = text_normalize(text)
-    print(len(text))
-    phones, tones, word2ph = g2p_v2(text)
-    bert = get_bert_feature(text, word2ph)
+    texts = []
+    texts += ["小心-"]
+    texts += ["小心--"]
+    texts += ["小心---"]
+    texts += ["小心----"]
+    texts += ["啊！但是《原神》是由,米哈\游自主，  [研发]的一款全.新开放世界.冒险游戏"]
+    texts += ["Don't be so childish! I'm sure heroes like them have important things to do."]
+    texts += ["不仅要买,还一人一个,不,一人好几个!"]
+    texts += ["蔡徐坤喜欢 唱 跳 rap 篮球 music和NBA"]
+    for text in texts:
+        text = text_normalize(text)
+        phones, tones, word2ph = g2p(text)
+        bert = get_bert_feature(text, word2ph)
 
-    print(len(phones), len(tones), sum(word2ph), bert.shape)
+        print(len(phones), len(tones), len(word2ph), sum(word2ph), bert.shape)
 
 
 # # 示例用法

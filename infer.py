@@ -40,6 +40,8 @@ else:
 
 def get_text(text, language_str, hps):
     norm_text, phone, tone, word2ph = clean_text(text, language_str)
+    print(norm_text, phone, tone, word2ph)
+    #logger.info("{} | {} | {} | {}".format(norm_text, " ".join(phone), " ".join(tone), " ".join(word2ph)))
     phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
 
     if hps.data.add_blank:
@@ -180,10 +182,10 @@ if __name__ == "__main__":
     noise_scale = 0.6
     noise_scale_w = 0.8
     length_scale = 1
-    language = "EN"
+    language = "ZH"
     
     #text = "Ah, my brain is short-circuited. You can right-click on me, then find the relink button next to the text box, and try clicking it."
-    with open("default_text/sam.txt") as f:
+    with open("default_text/test.txt") as f:
         for line in f.readlines():
             text = line.strip()
             text_output, audio_output = tts_fn(
@@ -196,7 +198,7 @@ if __name__ == "__main__":
                 language,
             )
 
-            filename = "./audio/sam/" + re.sub("[?]","",text) + ".wav"
+            filename = "./audio/test/" + re.sub("[?]","",text) + ".wav"
             wavfile.write(filename, hps.data.sampling_rate, audio_output[1])
             #wavfile.write(filename, 44100, audio_output[1])
 

@@ -91,7 +91,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
 
         spec, wav = self.get_audio(audiopath)
         sid = torch.LongTensor([int(self.spk_map[sid])])
-        return (phones, spec, wav, sid, tone, language, bert, ja_bert)
+        return (phones, spec, wav, sid, tone, language, bert, ja_bert, text)
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -234,7 +234,8 @@ class TextAudioSpeakerCollate:
         ja_bert_padded.zero_()
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
-
+            
+            print("text:{}".format(row[-1]))
             text = row[0]
             text_padded[i, : text.size(0)] = text
             text_lengths[i] = text.size(0)

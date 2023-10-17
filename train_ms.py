@@ -43,7 +43,7 @@ torch.backends.cuda.enable_mem_efficient_sdp(
 torch.backends.cuda.enable_math_sdp(True)
 global_step = 0
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 #os.environ['MASTER_ADDR'] = 'localhost'
 #os.environ['MASTER_PORT'] = '62580'
 #os.environ['RANK'] = '0'
@@ -315,7 +315,7 @@ def train_and_evaluate(
         ja_bert = ja_bert.cuda(rank, non_blocking=True)
 
         with autocast(enabled=hps.train.fp16_run):
-            train_log(logger, rank, "begin net_g forword, rank {} epoch {} batch {} step {}".format(rank, epoch, batch_idx, global_step))
+            train_log(logger, rank, "begin net_g forword, x {} x_len {} rank {} epoch {} batch {} step {}".format(x, x_lengths, rank, epoch, batch_idx, global_step))
             (
                 y_hat,
                 l_length,

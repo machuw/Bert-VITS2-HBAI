@@ -1,5 +1,6 @@
 import os
 import shutil
+import argparse
 
 def merge_subfolders(src_folder1, src_folder2, dest_folder):
     # 获取两个源文件夹中的子文件夹名称
@@ -25,9 +26,26 @@ def merge_subfolders(src_folder1, src_folder2, dest_folder):
                 if os.path.isfile(full_file_name):
                     shutil.copy(full_file_name, dest_path)
 
-# 示例
-src_folder1 = 'path_to_source_folder1'
-src_folder2 = 'path_to_source_folder2'
-dest_folder = 'path_to_destination_folder'
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--src_folder1", type=str, default="/root/autodl-tmp/datasets/Genshin/Chinese", help="path to source dir"
+    )
 
-merge_subfolders(src_folder1, src_folder2, dest_folder)
+    parser.add_argument(
+        "--src_folder2", type=str, default="/root/autodl-tmp/datasets/Genshin/English", help="path to source dir"
+    )
+
+    parser.add_argument(
+        "--dest_folder", type=str, default="/root/autodl-tmp/datasets/Chinese_English", help="path to source dir"
+    )
+    
+    args = parser.parse_args()
+    merge_subfolders(args.src_folder1, args.src_folder2, args.dest_folder)
+
+## 示例
+#src_folder1 = '/root/autodl-tmp/datasets/Genshin/Chinese'
+#src_folder2 = '/root/autodl-tmp/datasets/Genshin/English'
+#dest_folder = '/root/autodl-tmp/datasets/Chinese_English'
+#
+#merge_subfolders(src_folder1, src_folder2, dest_folder)
