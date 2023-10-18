@@ -12,60 +12,7 @@ import os
 import random
 
 def keep_english_chinese_japanese(s):
-    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5\u3040-\u30FF\u31F0-\u31FF]", "", s)
-
-def process(item):
-    try:
-        file_path, language, spk_pos, output = item
-        if ".lab" not in file_path:
-            return
-
-        # 获取音频路径
-        utt = file_path.replace(".lab", ".wav")
-        if not os.path.isfile(utt):
-            return
-
-        # 获取人物名字
-        spk = file_path.strip().split("/")[spk_pos]
-        spk = keep_english_chinese_japanese(spk)
-
-        # 读取文件内容
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        norm_text, phones, tones, word2ph = clean_text(content, language)
-
-        output.append(
-            "{}|{}|{}|{}|{}|{}|{}\n".format(
-                utt,
-                spk,
-                language,
-                norm_text,
-                " ".join(phones),
-                " ".join([str(i) for i in tones]),
-                " ".join([str(i) for i in word2ph]),
-            )
-        )
-    except Exception as error:
-        print("extract_files_content err!", file_path, error)
-
-def extract_files_content_mp(base_path, cleaned_path, language='ZH', spk_pos=2):
-    out_file = open(cleaned_path, "w", encoding="utf-8")
-
-    # 遍历base_path下的所有文件
-    input = []
-    output = []
-    for root, dirs, files in os.walk(base_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            input.append((file_path, language, spk_pos, output))
-    
-    num_processes = 20
-    with Pool(processes=num_processes) as pool:
-        for _ in tqdm(pool.imap_unordered(process, input)):
-            pass
-    print(output)
-
+    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5\u3040-\u30FF\u31F0-\u31FF\-]", "", s)
 
 def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2):
     file_data = {}
@@ -86,13 +33,16 @@ def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2):
                     continue
 
                 # 获取人物名字
-                spk = file_path.strip().split("/")[spk_pos]
+                game = file_path.strip().split("/")[spk_pos-2]
+                spk = file_path.strip().split("/")[spk_pos] + "-" + game
                 spk = keep_english_chinese_japanese(spk)
 
                 # 读取文件内容
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
 
+                if "不可能" in content:
+                    pass
                 norm_text, phones, tones, word2ph = clean_text(content, language)
 
                 out_file.write(
@@ -157,19 +107,19 @@ def create_train_and_val_list(
 
 
 @click.command()
-@click.option("--base-path", default="/root/autodl-tmp/datasets/Genshin/Japanese")
-@click.option("--cleaned-path", default="filelists/en.list.cleaned")
-@click.option("--train-path", default="filelists/train.en.list")
-@click.option("--val-path", default="filelists/val.en.list")
+@click.option("--base-path", default="/root/autodl-tmp/datasets/Honkai/English_zh")
+@click.option("--cleaned-path", default="filelists/genshin.cleaned.ce.list")
+@click.option("--train-path", default="filelists/genshin.train.ce.list")
+@click.option("--val-path", default="filelists/genshin.val.ce.list")
 @click.option(
     "--config-path",
-    default="configs/config.en.json",
+    default="configs/config.genshin.ce.json",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
 )
 @click.option("--max-text-len", default=500)
-@click.option("--language", default="EN")
+@click.option("--language", default="ZH")
 @click.option("--sample-rate", default=0.004)
-@click.option("--clean/--no-clean", default=True)
+@click.option("--clean/--no-clean", default=False)
 def main(
     base_path: str,
     cleaned_path: Optional[str],

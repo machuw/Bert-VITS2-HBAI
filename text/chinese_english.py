@@ -48,6 +48,8 @@ rep_map = {
     "~": "-",
     "「": "'",
     "」": "'",
+    "……": "…",
+    "--": "-",
 }
 
 tone_modifier = ToneSandhi()
@@ -55,6 +57,7 @@ tone_modifier = ToneSandhi()
 
 def replace_punctuation(text):
     text = text.replace("嗯", "恩").replace("呣", "母")
+    text = text.replace("——", "-")
     pattern = re.compile("|".join(re.escape(p) for p in rep_map.keys()))
 
     replaced_text = pattern.sub(lambda x: rep_map[x.group()], text)
@@ -262,8 +265,14 @@ def _g2p(segments):
             tones_list += [int(tone)] * len(phone)
     return phones_list, tones_list, word2ph
 
+def remove_color_tag(text):
+    cleaned_text = re.sub(r'<color=#([0-9A-Fa-f]{8})>', '', text)
+    cleaned_text = re.sub(r'</color>', '', cleaned_text)
+    return cleaned_text 
+
 
 def text_normalize(text):
+    text = remove_color_tag(text)
     numbers = re.findall(r"\d+(?:\.?\d+)?", text)
     for number in numbers:
         text = text.replace(number, cn2an.an2cn(number), 1)
@@ -281,6 +290,12 @@ if __name__ == "__main__":
     from text.chinese_english_bert import get_bert_feature
 
     texts = []
+    texts += ["不…不——！不可能！"]
+    texts += ["一--"]
+    texts += ["不--趴--"]
+    texts += ["----"]
+    texts += ["那、那是……"]
+    texts += ["Ahh!!! Uhh, um... I'm not shaking, I'm not... Ohhhh..."]
     texts += ["小心-"]
     texts += ["小心--"]
     texts += ["小心---"]
