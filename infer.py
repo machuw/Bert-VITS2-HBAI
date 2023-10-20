@@ -132,12 +132,12 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/EN_MODEL/G_143000.pth", help="path of your model"
+        "-m", "--model", default="./logs/ZH_MODEL/G_84000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./configs/config.en.json",
+        default="./configs/config.all.zh.json",
         help="path of your config file",
     )
     parser.add_argument(
@@ -177,15 +177,15 @@ if __name__ == "__main__":
     speakers = list(speaker_ids.keys())
     languages = ["ZH", "JP", "EN"]
     
-    speaker = "阿黛尔"
+    speaker = "可莉-Genshin"
     sdp_ratio = 0.2
     noise_scale = 0.6
     noise_scale_w = 0.8
     length_scale = 1
-    language = "EN"
+    language = "ZH"
     
     #text = "Ah, my brain is short-circuited. You can right-click on me, then find the relink button next to the text box, and try clicking it."
-    with open("default_text/nika.txt") as f:
+    with open("default_text/test.txt") as f:
         for line in f.readlines():
             text = line.strip()
             text_output, audio_output = tts_fn(

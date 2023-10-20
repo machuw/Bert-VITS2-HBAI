@@ -235,7 +235,7 @@ class TextAudioSpeakerCollate:
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
             
-            print("text:{}".format(row[-1]))
+            print("{}|{}".format(row[3], row[-1]))
             text = row[0]
             text_padded[i, : text.size(0)] = text
             text_lengths[i] = text.size(0)

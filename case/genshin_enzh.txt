@@ -1,0 +1,48 @@
+text:Thank you, Haydar… my baby.
+text:You can read ancient King Deshret script?
+text:Right, we won't solve anything by guessing on-shore.
+text:No, please… wait! Please… Don't go…
+text:Hmm? It's not working…
+text:Huh, what a coincidence…
+text:You know what happens if you lay a finger on me…
+text:Skybracer…
+text:She might have a few tricks up her sleeve…
+text:Oh, that's really brave of you!
+text:Come on, NICKNAME, let's go to the Falcon Coast!
+text:Oh! Wait, one second, I'll be right there.
+text:I was really counting on him not going through with it.
+text:…
+text:Fall before the curtain of night.
+text:Wha… What's going on!?
+text:Oh, of course! Hehe…
+text:Exchange!?
+text:Let's go check it out!
+text:Well that's dark!
+text:Ahem…
+text:…
+text:Ah…
+text:Incinerate!
+text:To get the treasure at the end of the journey, or to take the first steps into the unknown…
+text:What I heard and saw in the streets, combined with my personal experiences…
+text:In the future, if there's anything you ever need, you can come to me for help.
+text:The Ryuuji Case? So you want to re-investigate that one.
+text:You know all of this just as well as I do. Why lie to them?
+text:I have a theory, but I can't tell the others just yet… I don't want anyone to panic.
+text:…Because of you! It's all because of you!
+text:…I think I get what you're saying. You think none of this was a coincidence.
+text:By the way, what made you suddenly think of checking the prize in the first place?
+text:Sounds a lot like something the god you encountered in the beginning would do.
+text:You're too kind, my lady. I'm just doing my duty.
+text:Oh, huh… okay then.
+text:Ooh, that means we're part of Diluc's inner circle!
+text:'The guard looks alert. What should I do next?'
+text:But that's not important right now! Where the heck could he have gone in his current state?
+text:I… I would like to request permission to leave the resistance, Sir!
+text:So, have you cleared out any of these goods recently?
+text:Ah, so you've heard of his story, hmm…
+text:Oh, so you studied in the same Darshan as Lisa?
+text:Yes, sounds like a plan. Thanks for your help, everyone.
+text:Hee-hee, Paimon learned it from Chief Mate Juza.
+text:The real question is, are you willing to take me on as a student?
+text:So whether I'm here or in the city… it makes no difference.
+text:Hence, you'll hear many refer to her as the Acting Grand Master.

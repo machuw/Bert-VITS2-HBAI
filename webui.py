@@ -128,12 +128,12 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/EN_MODEL/G_66000.pth", help="path of your model"
+        "-m", "--model", default="./logs/ALL_ZH_MODEL/G_61000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./configs/config.en.json",
+        default="./configs/config.all.zh.json",
         help="path of your config file",
     )
     parser.add_argument(
@@ -217,6 +217,6 @@ if __name__ == "__main__":
             outputs=[text_output, audio_output],
         )
 
-    #webbrowser.open("http://127.0.0.1:7859")
-    #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7859)
+    webbrowser.open("http://127.0.0.1:7860")
+    app.launch(share=args.share)
+    #app.launch(share=False, server_name="0.0.0.0", server_port=7859)

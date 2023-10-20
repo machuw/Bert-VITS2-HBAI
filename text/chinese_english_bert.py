@@ -69,14 +69,12 @@ def get_bert_feature(text, word2ph, device=None):
     assert inputs["input_ids"].shape[-1] == len(tokens)
 
     word_level_feature = []
-    last_token = ""
-    checker = ContinuousHyphenChecker()
     for i, token in enumerate(tokens):
-        if token.startswith("##") or checker.is_second_hyphen(token) or checker.is_second_gantan(token) or checker.is_second_wenhao(token):
+        #if token.startswith("##") or checker.is_second_hyphen(token) or checker.is_second_gantan(token) or checker.is_second_wenhao(token):
+        if token.startswith("##"): 
             word_level_feature[-1] = [word_level_feature[-1][0] + res[i], word_level_feature[-1][0] + 1]
         else:
             word_level_feature.append([res[i], 1])
-        last_token = token
     word_level_feature = [res[0]/res[1] for res in word_level_feature] 
 
     assert len(word_level_feature) == len(word2ph), "{} | {} | {}".format(text, len(word_level_feature), len(word2ph))

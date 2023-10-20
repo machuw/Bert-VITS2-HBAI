@@ -3,3 +3,4 @@ JP: /usr/bin/env /root/autodl-tmp/miniconda3/envs/bert-vits2/bin/python /root/au
 
 CE: python -m torch.distributed.launch --nproc-per-node=1 --use_env train_ms.py -c /root/autodl-tmp/models/Bert-VITS2-HBAI/configs/config.ce.json -m CE_MODEL
 
+CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 python -m tensorboard.main --logdir=logs/ZH_MODEL/
