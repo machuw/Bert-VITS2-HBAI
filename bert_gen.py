@@ -47,7 +47,7 @@ def process_line(line):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=str, default="configs/config.honkai.enzh.json")
+    parser.add_argument("-c", "--config", type=str, default="configs/config.genshin.enzh.json")
     parser.add_argument("--num_processes", type=int, default=10)
     args = parser.parse_args()
     config_path = args.config

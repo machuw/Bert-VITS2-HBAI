@@ -41,9 +41,11 @@ torch.backends.cuda.enable_mem_efficient_sdp(
     True
 )  # Not available if torch version is lower than 2.0
 torch.backends.cuda.enable_math_sdp(True)
+torch.autograd.set_detect_anomaly(True)
+
 global_step = 0
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 #os.environ['MASTER_ADDR'] = 'localhost'
 #os.environ['MASTER_PORT'] = '62580'
 #os.environ['RANK'] = '0'
@@ -389,14 +391,16 @@ def train_and_evaluate(
                 optim_dur_disc.zero_grad()
                 scaler.scale(loss_dur_disc_all).backward()
                 scaler.unscale_(optim_dur_disc)
-                commons.clip_grad_value_(net_dur_disc.parameters(), None)
+                commons.clip_grad_value_(net_dur_disc.parameters(), clip_value=1)
+                torch.nn.utils.clip_grad_norm_(net_dur_disc.parameters(), max_norm=1)
                 scaler.step(optim_dur_disc)
             train_log(logger, rank, "end net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
 
         optim_d.zero_grad()
         scaler.scale(loss_disc_all).backward()
         scaler.unscale_(optim_d)
-        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), clip_value=1)
+        torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1)
         scaler.step(optim_d)
 
         with autocast(enabled=hps.train.fp16_run):
@@ -424,7 +428,8 @@ def train_and_evaluate(
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), clip_value=1)
+        torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1)
         scaler.step(optim_g)
         scaler.update()
 

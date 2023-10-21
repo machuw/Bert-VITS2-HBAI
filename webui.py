@@ -36,7 +36,7 @@ else:
 
 def get_text(text, language_str, hps):
     norm_text, phone, tone, word2ph = clean_text(text, language_str)
-    logger.info(norm_text, phone, tone, word2ph)
+    logger.info("{}|{}|{}|{}".format(norm_text, " ".join([str(i) for i in phone]), " ".join([str(i) for i in tone]), " ".join([str(i) for i in word2ph])))
     phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
 
     if hps.data.add_blank:

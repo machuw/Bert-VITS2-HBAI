@@ -107,13 +107,13 @@ def create_train_and_val_list(
 
 
 @click.command()
-@click.option("--base-path", default="/root/autodl-tmp/datasets/Honkai/English_zh")
-@click.option("--cleaned-path", default="filelists/honkai.cleaned.enzh.list")
-@click.option("--train-path", default="filelists/honkai.train.enzh.list")
-@click.option("--val-path", default="filelists/honkai.val.enzh.list")
+@click.option("--base-path", default="/root/autodl-tmp/datasets/Genshin/English_zh")
+@click.option("--cleaned-path", default="filelists/genshin.cleaned.enzh.list")
+@click.option("--train-path", default="filelists/genshin.train.enzh.list")
+@click.option("--val-path", default="filelists/genshin.val.enzh.list")
 @click.option(
     "--config-path",
-    default="configs/config.honkai.enzh.json",
+    default="configs/config.genshin.enzh.json",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
 )
 @click.option("--max-text-len", default=500)
