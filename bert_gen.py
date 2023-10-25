@@ -9,7 +9,8 @@ import torch.multiprocessing as mp
 import os
 
 
-def process_line(line):
+def process_line(item):
+    line, args = item
     rank = mp.current_process()._identity
     rank = rank[0] if len(rank) > 0 else 0
     if torch.cuda.is_available():
@@ -36,19 +37,35 @@ def process_line(line):
     
     bert_path = wav_path.replace(".wav", ".bert.pt")
 
-    #try:
-    #    bert = torch.load(bert_path)
-    #    assert bert.shape[-1] == len(phone)
-    #except Exception:
-    bert = get_bert(text, word2ph, language_str, device)
-    assert bert.shape[-1] == len(phone)
-    torch.save(bert, bert_path)
+    if not args.rebuild:
+        try:
+            bert = torch.load(bert_path)
+            assert bert.shape[-1] == len(phone)
+        except Exception:
+            bert = get_bert(text, word2ph, language_str, device)
+            assert bert.shape[-1] == len(phone)
+            torch.save(bert, bert_path)
+    else:
+        bert = get_bert(text, word2ph, language_str, device)
+        assert bert.shape[-1] == len(phone)
+        torch.save(bert, bert_path) 
+
+    if args.check:
+        print("text:{}".format(text)) 
+        print("word2ph sum:{}".format(sum(word2ph)))
+        print("{} | {} | {}".format("".join(phones), " ".join([str(i) for i in tone]), " ".join([str(i) for i in word2ph])))
+        torch.set_printoptions(edgeitems=5, linewidth=160)
+        print(bert)
+        print(bert.size())
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=str, default="configs/config.genshin.enzh.json")
     parser.add_argument("--num_processes", type=int, default=10)
+    parser.add_argument("--rebuild", action='store_true', default=False)
+    parser.add_argument("--check", action='store_true', default=False)
+    parser.add_argument("--linear", action='store_true', default=False)
     args = parser.parse_args()
     config_path = args.config
     hps = utils.get_hparams_from_file(config_path)
@@ -59,7 +76,11 @@ if __name__ == "__main__":
     with open(hps.data.validation_files, encoding="utf-8") as f:
         lines.extend(f.readlines())
 
-    num_processes = args.num_processes
-    with Pool(processes=num_processes) as pool:
-        for _ in tqdm(pool.imap_unordered(process_line, lines), total=len(lines)):
-            pass
+    if not args.linear:
+        num_processes = args.num_processes
+        with Pool(processes=num_processes) as pool:
+            for _ in tqdm(pool.imap_unordered(process_line, [(line, args) for line in lines]), total=len(lines)):
+                pass
+    else:
+        for line in lines:
+            process_line((line, args))

@@ -128,12 +128,12 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/ALL_ZH_MODEL/G_61000.pth", help="path of your model"
+        "-m", "--model", default="./logs/HK_ENZH_MODEL/G_32000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./configs/config.all.zh.json",
+        default="./logs/HK_ENZH_MODEL/config.json",
         help="path of your config file",
     )
     parser.add_argument(

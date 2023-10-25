@@ -71,7 +71,7 @@ def replace_punctuation(text):
     
     # 这里会剔除非中文字符和特殊符号
     replaced_text = re.sub(
-        r"[^a-zA-Z\u4e00-\u9fa5\s" + "".join(punctuation) + r"]+", "", replaced_text
+        r"[^a-zA-Z\u4e00-\u9fa5\s\d" + "".join(punctuation) + r"]+", "", replaced_text
     )
 
     return replaced_text
@@ -283,6 +283,7 @@ def text_normalize(text):
     numbers = re.findall(r"\d+(?:\.?\d+)?", text)
     for number in numbers:
         text = text.replace(number, cn2an.an2cn(number), 1)
+
     text = replace_punctuation(text)
     return text
 
@@ -298,7 +299,7 @@ if __name__ == "__main__":
 
     texts = []
     #texts += ["*yawn* Dear, dear."]
-    texts += ["不…不——！不可能！"]
+    texts += ["不…不——！500,不可能！"]
     texts += ["一--"]
     texts += ["不--趴--"]
     texts += ["----"]

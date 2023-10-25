@@ -45,7 +45,7 @@ torch.autograd.set_detect_anomaly(True)
 
 global_step = 0
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 #os.environ['MASTER_ADDR'] = 'localhost'
 #os.environ['MASTER_PORT'] = '62580'
 #os.environ['RANK'] = '0'
@@ -320,7 +320,7 @@ def train_and_evaluate(
             print(global_step)
 
         with autocast(enabled=hps.train.fp16_run):
-            train_log(logger, rank, "begin net_g forword, x {} x_len {} rank {} epoch {} batch {} step {}".format(x, x_lengths, rank, epoch, batch_idx, global_step))
+            train_log(logger, rank, "begin net_g forword, rank {} epoch {} batch {} step {}".format(rank, epoch, batch_idx, global_step))
             (
                 y_hat,
                 l_length,
@@ -341,7 +341,6 @@ def train_and_evaluate(
                 bert,
                 ja_bert,
             )
-            train_log(logger, rank, "end net_g forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             mel = spec_to_mel_torch(
                 spec,
                 hps.data.filter_length,
@@ -368,7 +367,6 @@ def train_and_evaluate(
                 y, ids_slice * hps.data.hop_length, hps.train.segment_size
             )  # slice
 
-            train_log(logger, rank, "begin net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             # Discriminator
             y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
             with autocast(enabled=False):
@@ -391,29 +389,29 @@ def train_and_evaluate(
                 optim_dur_disc.zero_grad()
                 scaler.scale(loss_dur_disc_all).backward()
                 scaler.unscale_(optim_dur_disc)
-                commons.clip_grad_value_(net_dur_disc.parameters(), clip_value=1)
-                torch.nn.utils.clip_grad_norm_(net_dur_disc.parameters(), max_norm=1)
+                commons.clip_grad_value_(net_dur_disc.parameters(), 
+                                         clip_value=hps.train.clip_value
+                                         if "clip_value" in hps.train
+                                         else None)
+                #torch.nn.utils.clip_grad_norm_(net_dur_disc.parameters(), max_norm=1)
                 scaler.step(optim_dur_disc)
-            train_log(logger, rank, "end net_g loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
 
         optim_d.zero_grad()
         scaler.scale(loss_disc_all).backward()
         scaler.unscale_(optim_d)
-        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), clip_value=1)
-        torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1)
+        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), 
+                                               clip_value=hps.train.clip_value
+                                               if "clip_value" in hps.train
+                                               else None)
+        #torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1)
         scaler.step(optim_d)
 
         with autocast(enabled=hps.train.fp16_run):
             # Generator
-            train_log(logger, rank, "begin net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
-            train_log(logger, rank, "end net_d forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             if net_dur_disc is not None:
-                train_log(logger, rank, "begin net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
                 y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw, logw_)
-                train_log(logger, rank, "end net_dur_disc forword, rank {} batch {} step {}".format(rank, batch_idx, global_step))
             with autocast(enabled=False):
-                train_log(logger, rank, "begin net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
                 loss_dur = torch.sum(l_length.float())
                 loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
                 loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
@@ -424,12 +422,14 @@ def train_and_evaluate(
                 if net_dur_disc is not None:
                     loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
                     loss_gen_all += loss_dur_gen
-                train_log(logger, rank, "end net_d & net_dur_disc loss, rank {} batch {} step {}".format(rank, batch_idx, global_step))
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), clip_value=1)
-        torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1)
+        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), 
+                                               clip_value=hps.train.clip_value
+                                               if "clip_value" in hps.train
+                                               else None)
+        #torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1)
         scaler.step(optim_g)
         scaler.update()
 
