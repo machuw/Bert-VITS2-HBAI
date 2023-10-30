@@ -45,7 +45,7 @@ torch.autograd.set_detect_anomaly(True)
 
 global_step = 0
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 #os.environ['MASTER_ADDR'] = 'localhost'
 #os.environ['MASTER_PORT'] = '62580'
 #os.environ['RANK'] = '0'

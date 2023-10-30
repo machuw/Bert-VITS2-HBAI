@@ -61,7 +61,7 @@ def process_line(item):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=str, default="configs/config.genshin.enzh.json")
+    parser.add_argument("-c", "--config", type=str, default="configs/config.honkai.enzh.json")
     parser.add_argument("--num_processes", type=int, default=10)
     parser.add_argument("--rebuild", action='store_true', default=False)
     parser.add_argument("--check", action='store_true', default=False)

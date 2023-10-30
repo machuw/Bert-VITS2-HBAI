@@ -132,12 +132,12 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/GS_CE_MODEL/G_18000.pth", help="path of your model"
+        "-m", "--model", default="./logs/ALL_ZH_ENZH_MODEL/G_144000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./logs/GS_CE_MODEL/config.json",
+        default="./logs/ALL_ZH_ENZH_MODEL/config.json",
         help="path of your config file",
     )
     parser.add_argument(
@@ -177,15 +177,15 @@ if __name__ == "__main__":
     speakers = list(speaker_ids.keys())
     languages = ["ZH", "JP", "EN"]
     
-    speaker = "可莉-Genshin"
+    speaker = "可莉-Genshin-enzh"
     sdp_ratio = 0.2
     noise_scale = 0.6
     noise_scale_w = 0.8
-    length_scale = 1
+    length_scale = 1.0
     language = "ZH"
     
     #text = "Ah, my brain is short-circuited. You can right-click on me, then find the relink button next to the text box, and try clicking it."
-    with open("default_text/test.txt") as f:
+    with open("default_text/neko.txt") as f:
         for line in f.readlines():
             text = line.strip()
             text_output, audio_output = tts_fn(
@@ -198,7 +198,7 @@ if __name__ == "__main__":
                 language,
             )
 
-            filename = "./audio/test/" + re.sub("[?]","",text) + ".wav"
+            filename = "./audio/neko_enzh/" + re.sub("[?]","",text) + ".wav"
             wavfile.write(filename, hps.data.sampling_rate, audio_output[1])
             #wavfile.write(filename, 44100, audio_output[1])
 

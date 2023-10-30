@@ -23,3 +23,5 @@ fugashi
 num2words
 g2p_en
 wandb
+scikit-learn
+librosa

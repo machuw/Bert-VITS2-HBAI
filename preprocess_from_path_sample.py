@@ -11,11 +11,74 @@ import re
 import os
 import random
 
+class badcase_spk_path_dict:
+    def __init__(
+        self,
+        dict_path
+    ):
+        self.bd_dict = {}
+        with open(dict_path, encoding="utf-8") as fd:
+            for line in fd.readlines():
+                spk, pattern = line.strip().split("\t")
+
+                if spk in self.bd_dict:
+                    self.bd_dict[spk].append(pattern)
+                else:
+                    self.bd_dict[spk] = [pattern]
+    
+    def get_bd_dict(self):
+        return self.bd_dict
+
+    def check_spk_path(self, spk, path):
+        if spk in self.bd_dict:
+            for pattern in self.bd_dict[spk]:
+                return pattern in path
+        return False
+    
+class role_onlie_dict:
+    def __init__(self, dict_path):
+        self.role_dict = {}
+        with open(dict_path, encoding="utf-8") as fd:
+            for line in fd.readlines():
+                role = line.strip()
+                self.role_dict[role] = 1
+
+    def get_dict(self):
+        return self.role_dict
+
+    def check_role(self, role):
+        if role in self.role_dict:
+            return True
+        elif role.strip().split("-")[0] in self.role_dict:
+            return True
+        return False
+
+bd_dict = None
+role_dict = None
+    
+def filter_line(spk, utt, content):
+    global bd_dict
+    global role_dict
+
+    if "NICKNAME" in content:
+        print("badcase line: ", content)
+        return True
+
+    # 跳过badcase
+    if bd_dict.check_spk_path(spk, utt):
+        print("badcase line: ", utt)
+        return True
+
+    ## 跳过非在线角色
+    #if not role_dict.check_role(spk):
+    #    return True
+
+    return False
+
 def keep_english_chinese_japanese(s):
     return re.sub(r"[^a-zA-Z\u4e00-\u9fa5\u3040-\u30FF\u31F0-\u31FF\-]", "", s)
 
-def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2):
-    file_data = {}
+def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2, bd_dict=None):
     out_file = open(cleaned_path, "w", encoding="utf-8")
 
     # 遍历base_path下的所有文件
@@ -40,9 +103,10 @@ def extract_files_content(base_path, cleaned_path, language='ZH', spk_pos=2):
                 # 读取文件内容
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
+                
+                if filter_line(spk, utt, content):
+                    continue
 
-                if "不可能" in content:
-                    pass
                 norm_text, phones, tones, word2ph = clean_text(content, language)
 
                 out_file.write(
@@ -67,13 +131,17 @@ def create_train_and_val_list(
         spk_utt_map: dict, 
         spk_id_map: dict,
         max_text_len: int,
-        sample_rate: float):
+        sample_rate: float,
+        bd_dict):
     current_sid = 0
     
     with open(path, encoding="utf-8") as f:
         for line in f.readlines():
             try:
                 utt, spk, language, text, phones, tones, word2ph = line.strip().split("|")
+
+                if filter_line(spk, utt, text):
+                    continue
 
                 # 过滤太长的语音，最好的办法应该是去做分割
                 if len(text) > max_text_len:
@@ -108,17 +176,17 @@ def create_train_and_val_list(
 
 @click.command()
 @click.option("--base-path", default="/root/autodl-tmp/datasets/Honkai/English_zh_bert0")
-@click.option("--cleaned-path", default="filelists/genshin.cleaned.keli.enzh.bert0.list")
-@click.option("--train-path", default="filelists/genshin.train.keli.enzh.bert0.list")
-@click.option("--val-path", default="filelists/genshin.val.keli.enzh.bert0.list")
+@click.option("--cleaned-path", default="filelists/all.cleaned.zh.enzh.list")
+@click.option("--train-path", default="filelists/all.train.zh.enzh.list")
+@click.option("--val-path", default="filelists/all.val.zh.enzh.list")
 @click.option(
     "--config-path",
     default="configs/config.temp.json",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
 )
-@click.option("--max-text-len", default=500)
-@click.option("--language", default="EN")
-@click.option("--sample-rate", default=0.004)
+@click.option("--max-text-len", default=100)
+@click.option("--language", default="ZH")
+@click.option("--sample-rate", default=0.002)
 @click.option("--clean/--no-clean", default=False)
 def main(
     base_path: str,
@@ -131,8 +199,14 @@ def main(
     sample_rate: float,
     clean: bool,
 ):
+    global bd_dict
+    global role_dict
+
+    bd_dict = badcase_spk_path_dict("./badcase_spk_path_dict.txt")
+    role_dict = role_onlie_dict("./role_online.txt")
+
     if clean:
-        extract_files_content(base_path, cleaned_path, language, 6)
+        extract_files_content(base_path, cleaned_path, language, 6, bd_dict)
 
     spk_utt_map = defaultdict(list)
     spk_id_map = {}
@@ -144,7 +218,8 @@ def main(
         spk_utt_map,
         spk_id_map,
         max_text_len,
-        sample_rate)
+        sample_rate,
+        bd_dict)
 
     config = json.load(open(config_path, encoding="utf-8"))
     config["data"]["spk2id"] = spk_id_map
