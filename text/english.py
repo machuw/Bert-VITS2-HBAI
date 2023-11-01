@@ -254,8 +254,17 @@ def g2p_en_word(word):
     phones = [post_replace_ph(i) for i in phns] 
     tones = tns 
     word2ph = [len(phns)]
+
+    phones, tones, word2ph = case_process(word, phones, tones, word2ph)
     return phones, tones, word2ph
 
+
+def case_process(word, phones, tones, word2ph):
+    if word=="wifi":
+        phones = ["w", "ay", "f", "ay"]
+        tones = [0, 2, 0, 1]
+        word2ph = [4]
+    return phones, tones, word2ph
 
 if __name__ == "__main__":
     # print(get_dict())
