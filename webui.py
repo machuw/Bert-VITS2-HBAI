@@ -1,6 +1,6 @@
 # flake8: noqa: E402
 
-import sys, os
+import sys, os 
 import logging
 
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -168,6 +168,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d", "--debug", action="store_true", help="enable DEBUG-LEVEL log"
     )
+    parser.add_argument(
+        "-p", "--port", default=7860, help="port"
+    )
 
     args = parser.parse_args()
     if args.debug:
@@ -245,4 +248,4 @@ if __name__ == "__main__":
 
     #webbrowser.open("http://127.0.0.1:7860")
     #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7861)
+    app.launch(share=False, server_name="0.0.0.0", server_port=int(args.port))

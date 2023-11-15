@@ -25,3 +25,5 @@ g2p_en
 wandb
 scikit-learn
 librosa
+git+https://github.com/openai/whisper.git
+torchaudio==2.0.1
