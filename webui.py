@@ -24,6 +24,11 @@ from text import cleaned_text_to_sequence, get_bert
 from text.cleaner import clean_text
 import gradio as gr
 import webbrowser
+from scipy import signal
+import soundfile as sf
+import numpy as np
+import noisereduce as nr
+
 
 net_g = None
 
@@ -32,6 +37,24 @@ if sys.platform == "darwin" and torch.backends.mps.is_available():
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 else:
     device = "cuda"
+
+def mono_to_stereo(audio_mono):
+    # 检查音频是否为单声道
+    if len(audio_mono.shape) != 1:
+        raise ValueError("The input array should be a mono audio")
+
+    # 创建一个新的ndarray，将单声道音频复制到双声道
+    audio_stereo = np.stack([audio_mono, audio_mono])
+    return audio_stereo.T
+
+def resample_audio(file, data, sample_rate):
+    target_sample_rate = 48000
+    resample_ratio = target_sample_rate / sample_rate
+    converted_data = signal.resample(data, int(len(data) * resample_ratio))
+
+    reduced_noise = nr.reduce_noise(y=converted_data, sr=target_sample_rate)
+    
+    return reduced_noise, target_sample_rate 
 
 
 def get_text(text, language_str, hps):
@@ -122,18 +145,21 @@ def tts_fn(
             language=language,
         )
         torch.cuda.empty_cache()
-    return "Success hahahaha", (hps.data.sampling_rate, audio)
+        #audio, sample_rate = resample_audio("{}_{}".format(text, speaker), audio, hps.data.sampling_rate)
+        #audio = mono_to_stereo(audio)
+        #sf.write("{}_{}_mono".format(text, speaker), audio, 48000, format='wav')
+    return "Success", (hps.data.sampling_rate, audio)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/ROLE_ZH_ENZH_MODEL/G_58000.pth", help="path of your model"
+        "-m", "--model", default="./trained_models/ALL_ZH_ENZH_MODEL/20231105/G_222000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./logs/ROLE_ZH_ENZH_MODEL/config.json",
+        default="./trained_models/ALL_ZH_ENZH_MODEL/20231105/config.json",
         help="path of your config file",
     )
     parser.add_argument(
@@ -219,4 +245,4 @@ if __name__ == "__main__":
 
     #webbrowser.open("http://127.0.0.1:7860")
     #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7860)
+    app.launch(share=False, server_name="0.0.0.0", server_port=7861)

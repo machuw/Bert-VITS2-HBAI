@@ -51,12 +51,11 @@ def text_to_speech(text, file, language="中文", role_name="派蒙", talk_speed
         else:
             result = vits_client_new.predict(
                 text,
-                role_name,
-                0.2,  # SDP Ratio
-                0.5,    # 感情变化程度
-                0.9,    # 音素发音长度
-                talk_speed,  # 整体语速
                 'ZH',
+                role_name,
+                0.6,    # 感情变化程度
+                0.8,    # 音素发音长度
+                talk_speed,  # 整体语速
                 fn_index=0
             )
         logger.info(result)

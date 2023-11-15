@@ -1,5 +1,5 @@
 # flake8: noqa: E402
-
+import time
 import sys, os
 import logging
 import noisereduce as nr
@@ -35,11 +35,11 @@ net_g = None
 net_g_keli = None
 net_g_lynette = None
 net_g_zwclr = None
+net_g_en = None
 
 g_role_map = {
     "可莉": "可莉-Genshin",
-    "莫娜": "琳妮特-Genshin",
-    "琳妮特": "琳妮特-Genshin",
+    "莫娜": "莫娜-Genshin",
     "爱莉希雅": "爱莉希雅-Honkai",
     "琪亚娜": "胡桃-Genshin",
     "香菱": "香菱-Genshin",
@@ -146,11 +146,12 @@ def infer(text, sdp_ratio, noise_scale, noise_scale_w, length_scale, sid, langua
 
         if sid == "可莉-Genshin":
             model = net_g_keli
-        elif sid == "琳妮特-Genshin":
+        elif sid == "莫娜-Genshin":
             model = net_g_lynette
-            noise_scale = 0.6
-            noise_scale_w = 0.7
-            length_scale = 0.9
+            sdp_ratio = 0.2
+            noise_scale = 0.1
+            noise_scale_w = 0.8
+            length_scale = 1
         elif sid == "债务处理人-Genshin":
             model = net_g_zwclr
             speakers = torch.LongTensor([0]).to(device)
@@ -180,14 +181,20 @@ def infer(text, sdp_ratio, noise_scale, noise_scale_w, length_scale, sid, langua
 
 
 def tts_fn(
-    text, speaker, sdp_ratio, noise_scale, noise_scale_w, length_scale, language
+    text, language, speaker, noise_scale, noise_scale_w, length_scale
 ):
+    start_time = time.time()
     logger.info("text: {} speaker: {}".format(text, speaker))
+
+    language = 'ZH'
+    
+    sdp_ratio = 0.2
+    noise_scale = 0.6
+    noise_scale_w = 0.8
+    length_scale = 1
 
     if speaker in g_role_map:
         speaker = g_role_map[speaker]
-    #else:
-    #    speaker = "可莉-Genshin"
 
     with torch.no_grad():
         audio = infer(
@@ -200,10 +207,9 @@ def tts_fn(
             language=language,
         )
         torch.cuda.empty_cache()
-        #audio = nr.reduce_noise(y=audio, sr=44100)
-        #audio, sample_rate = resample_audio("{}_{}".format(text, speaker), audio, hps.data.sampling_rate)
-        #audio = mono_to_stereo(audio)
-        #sf.write("{}_{}_mono".format(text, speaker), audio, 48000, format='wav')
+    end_time = time.time()
+    latency = end_time - start_time
+    logger.info("text: {} speaker: {} lentency: {}".format(text, speaker, latency))
     return "Success", (hps.data.sampling_rate, audio)
 
 
@@ -235,12 +241,12 @@ if __name__ == "__main__":
 
     # model 3
     parser.add_argument(
-        "-m3", "--model3", default="./trained_models/LYNETTE_ZH_MODEL/20231113/G_4000.pth", help="path of your model"
+        "-m3", "--model3", default="./trained_models/ALL_ZH_ENZH_MODEL/20231108/G_254000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c3",
         "--config3",
-        default="./trained_models/LYNETTE_ZH_MODEL/20231113/config.json",
+        default="./trained_models/ALL_ZH_ENZH_MODEL/20231108/config.json",
         help="path of your config file",
     )
 
@@ -255,12 +261,23 @@ if __name__ == "__main__":
         help="path of your config file",
     )
 
+    ## model 5
+    #parser.add_argument(
+    #    "-m5", "--model5", default="/home/mayuanchao/workspace/Bert-VITS2-HBAI/logs/EN_MODEL/G_66000.pth", help="path of your model"
+    #)
+    #parser.add_argument(
+    #    "-c5",
+    #    "--config5",
+    #    default="/home/mayuanchao/workspace/Bert-VITS2-HBAI/configs/config.en.json",
+    #    help="path of your config file",
+    #)
+
     parser.add_argument(
         "--share", default=False, help="make link public", action="store_true"
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", help="enable DEBUG-LEVEL log"
-    2)
+    )
     parser.add_argument(
         "-p", "--port", default=7860, help="port"
     )
@@ -360,16 +377,15 @@ if __name__ == "__main__":
             tts_fn,
             inputs=[
                 text,
+                language,
                 speaker,
-                sdp_ratio,
                 noise_scale,
                 noise_scale_w,
                 length_scale,
-                language,
             ],
             outputs=[text_output, audio_output],
         )
 
     #webbrowser.open("http://127.0.0.1:7860")
     #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7860)
+    app.launch(share=False, server_name="0.0.0.0", server_port=int(args.port))

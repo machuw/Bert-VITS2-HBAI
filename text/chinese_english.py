@@ -80,7 +80,7 @@ def replace_abbreviations(text, abbreviations):
     return text
 
 def insert_spaces_in_uppercase_words(text):
-    uppercase_words = re.findall(r'(?<![A-Za-z])[A-Z]+(?![A-Za-z])', text)
+    uppercase_words = re.findall(r'(?<![A-Za-z])[A-Z\d]+(?![A-Za-z])', text)
     for word in uppercase_words:
         spaced_word = ' '.join(list(word))
         text = text.replace(word, spaced_word)
@@ -121,7 +121,8 @@ def g2p(text):
     for word, pos in seg_cut:
         if word.isspace():
             continue
-        if bool(re.match('^[a-zA-Z\s]+$', word)):
+        # 英文和数字用en的g2p
+        if bool(re.match('^[a-zA-Z\s]+$', word)) or bool(re.match('^\d+$', word)):
             phone, tone, word2ph = _g2p_en(word, pos)
         else:
             phone, tone, word2ph = _g2p_zh(word, pos)
@@ -304,12 +305,13 @@ def remove_color_tag(text):
 
 def text_normalize(text):
     text = remove_color_tag(text)
-    text = insert_spaces_in_uppercase_words(text)
-
-    numbers = re.findall(r"\d+(?:\.?\d+)?", text)
+    
+    #numbers = re.findall(r"\d+(?:\.?\d+)?", text)
+    numbers = re.findall(r'(?<![A-Za-z])\d+(?:\.?\d+)?(?![A-Za-z])', text)
     for number in numbers:
         text = text.replace(number, cn2an.an2cn(number), 1)
 
+    text = insert_spaces_in_uppercase_words(text)
     text = replace_punctuation(text)
     return text
 
