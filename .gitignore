@@ -166,3 +166,5 @@ cython_debug/
 filelists/*
 !/filelists/esd.list
 data/*
+
+pytorch_model.bin

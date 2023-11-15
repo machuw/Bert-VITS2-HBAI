@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /root/miniconda3/etc/profile.d/conda.sh
+source /root/autodl-tmp/miniconda3/etc/profile.d/conda.sh
 conda activate bert-vits2
 
 # 使用pgrep查找与bert-vits2相关的进程

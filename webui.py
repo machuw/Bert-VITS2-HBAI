@@ -1,6 +1,6 @@
 # flake8: noqa: E402
 
-import sys, os
+import sys, os 
 import logging
 
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -128,12 +128,12 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/ROLE_ZH_ENZH_MODEL/G_58000.pth", help="path of your model"
+        "-m", "--model", default="./logs/KELI_ZH_ENZH_MODEL_V2/G_28000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
         "--config",
-        default="./logs/ROLE_ZH_ENZH_MODEL/config.json",
+        default="./logs/KELI_ZH_ENZH_MODEL_V2/config.json",
         help="path of your config file",
     )
     parser.add_argument(
@@ -141,6 +141,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", help="enable DEBUG-LEVEL log"
+    )
+    parser.add_argument(
+        "-p", "--port", default=7860, help="port"
     )
 
     args = parser.parse_args()
@@ -219,4 +222,4 @@ if __name__ == "__main__":
 
     #webbrowser.open("http://127.0.0.1:7860")
     #app.launch(share=args.share)
-    app.launch(share=False, server_name="0.0.0.0", server_port=7860)
+    app.launch(share=False, server_name="0.0.0.0", server_port=int(args.port))

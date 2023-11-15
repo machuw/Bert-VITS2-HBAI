@@ -463,3 +463,95 @@ class FFN(nn.Module):
         padding = [[0, 0], [0, 0], [pad_l, pad_r]]
         x = F.pad(x, commons.convert_pad_shape(padding))
         return x
+
+
+class GateNN(nn.Module):
+    def __init__(self, in_channels, out_channels, filter_channels, kernel_size):
+        super().__init__()
+        # Define the expert's layers
+        self.network = nn.Sequential(
+            nn.Conv1d(in_channels, out_channels),
+            nn.ReLU(),
+            nn.Conv1d(out_channels, out_channels)
+        )
+    def forward(self, x):
+        return self.network(x)
+
+
+class SparseMoE(nn.Module):
+    def __init__(self,
+        in_channels,
+        out_channels,
+        filter_channels,
+        kernel_size,
+        p_dropout=0.0,
+        activation=None,
+        causal=False,
+        temperature=1.0,
+        num_experts=4
+        ):
+        super().__init__()
+
+        self.kernel_size = kernel_size
+        self.temperature = temperature
+
+        if causal:
+            self.padding = self._causal_padding
+        else:
+            self.padding = self._same_padding
+
+        #self.experts = nn.ModuleList([Expert(in_channels, out_channels) for _ in range(num_experts)])
+        self.experts = nn.ModuleList([FFN(
+                    in_channels,
+                    out_channels,
+                    filter_channels,
+                    kernel_size,
+                    p_dropout=p_dropout,
+                    activation=activation,
+                    causal=causal,
+                ) for _ in range(num_experts)])
+        self.gate = nn.Conv1d(in_channels, num_experts, kernel_size)
+        
+
+    def gumbel_softmax(self, logits, temperature=1.0, hard=False):
+        # Draw samples from the Gumbel distribution
+        gumbel_noise = -torch.log(-torch.log(torch.rand_like(logits)))
+        # Apply the Gumbel-Softmax trick
+        gumbels = (logits + gumbel_noise) / temperature
+        # Compute softmax
+        y_soft = F.softmax(gumbels, dim=-1)
+        y = y_soft
+        if hard:
+            # Create a one-hot vector for the largest entry
+            y_hard = torch.zeros_like(logits).scatter_(-1, y_soft.max(-1)[1].unsqueeze(-1), 1.0)
+            # Use straight-through estimator for the gradient
+            y = y_hard - y_soft.detach() + y_soft
+        return y
+    
+    def forward(self, x, x_mask):
+        # Compute gating scores
+        gating_logits = self.gate(self.padding(x))
+        # Apply Gumbel Softmax to get soft assignment
+        gates = self.gumbel_softmax(gating_logits, temperature=self.temperature, hard=True)
+        # Apply each expert to the input and weight by the gating scores
+        expert_outputs = [expert(x, x_mask) * gates[:, i:i+1] for i, expert in enumerate(self.experts)]
+        # Sum the weighted expert outputs
+        return sum(expert_outputs)
+    
+    def _causal_padding(self, x):
+        if self.kernel_size == 1:
+            return x
+        pad_l = self.kernel_size - 1
+        pad_r = 0
+        padding = [[0, 0], [0, 0], [pad_l, pad_r]]
+        x = F.pad(x, commons.convert_pad_shape(padding))
+        return x
+
+    def _same_padding(self, x):
+        if self.kernel_size == 1:
+            return x
+        pad_l = (self.kernel_size - 1) // 2
+        pad_r = self.kernel_size // 2
+        padding = [[0, 0], [0, 0], [pad_l, pad_r]]
+        x = F.pad(x, commons.convert_pad_shape(padding))
+        return x
