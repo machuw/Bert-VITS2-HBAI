@@ -59,8 +59,32 @@ rep_map = {
  #   "--": "- ",
 }
 
+abbreviations = [
+    "USA", 
+    "UK", 
+    "UAE",
+    "BGM",
+    "B2B",
+]
+
 tone_modifier = ToneSandhi()
 
+def replace_abbreviations(text, abbreviations):
+    for abbr in abbreviations:
+        # 创建一个正则表达式，匹配缩写
+        pattern = re.compile(abbr)
+        # 使用正则表达式替换缩写
+        text = pattern.sub(' '.join(list(abbr)), text)
+    #pattern = re.compile("|".join(re.escape(p) for p in abbreviations))
+    #replaced_text = pattern.sub(lambda x: rep_map[x.group()], text)
+    return text
+
+def insert_spaces_in_uppercase_words(text):
+    uppercase_words = re.findall(r'(?<![A-Za-z])[A-Z]+(?![A-Za-z])', text)
+    for word in uppercase_words:
+        spaced_word = ' '.join(list(word))
+        text = text.replace(word, spaced_word)
+    return text
 
 def replace_punctuation(text):
     text = text.replace("嗯", "恩").replace("呣", "母")
@@ -280,6 +304,8 @@ def remove_color_tag(text):
 
 def text_normalize(text):
     text = remove_color_tag(text)
+    text = insert_spaces_in_uppercase_words(text)
+
     numbers = re.findall(r"\d+(?:\.?\d+)?", text)
     for number in numbers:
         text = text.replace(number, cn2an.an2cn(number), 1)
