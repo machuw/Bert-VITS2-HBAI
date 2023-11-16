@@ -175,7 +175,7 @@ def create_train_and_val_list(
 
 
 @click.command()
-@click.option("--base-path", default="/root/autodl-tmp/datasets/Honkai/English_zh_bert0")
+@click.option("--base-path", default="/root/autodl-tmp/datasets/Genshin/Chinese/可莉喵")
 @click.option("--cleaned-path", default="filelists/all.cleaned.zh.enzh.list")
 @click.option("--train-path", default="filelists/all.train.zh.enzh.list")
 @click.option("--val-path", default="filelists/all.val.zh.enzh.list")
@@ -186,7 +186,7 @@ def create_train_and_val_list(
 )
 @click.option("--max-text-len", default=100)
 @click.option("--language", default="ZH")
-@click.option("--sample-rate", default=0.002)
+@click.option("--sample-rate", default=0.004)
 @click.option("--clean/--no-clean", default=False)
 def main(
     base_path: str,

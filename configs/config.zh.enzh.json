@@ -18,6 +18,7 @@
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
+    "keep_ckpts":-1,
     "skip_optimizer": true
   },
   "data": {
@@ -3950,7 +3951,10 @@
       "阿丽娜-Honkai": 3912,
       "阿往-Honkai": 3913,
       "阿往阿来-Honkai": 3914,
-      "阿伟-Honkai": 3915
+      "阿伟-Honkai": 3915,
+      "琪亚娜-Honkai": 3916,
+      "爱莉希雅-Honkai": 3917,
+      "可莉喵-Genshin": 3918
     }
   },
   "model": {

@@ -132,7 +132,7 @@ def tts_fn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", default="./logs/ROLE_ZH_ENZH_MODEL/G_49000.pth", help="path of your model"
+        "-m", "--model", default="./logs/ROLE_ZH_ENZH_MODEL/G_127000.pth", help="path of your model"
     )
     parser.add_argument(
         "-c",
