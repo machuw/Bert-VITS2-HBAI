@@ -2,9 +2,9 @@
   "train": {
     "log_interval": 200,
     "eval_interval": 1000,
-    "seed": 52,
-    "epochs": 10000,
-    "learning_rate": 0.0003,
+    "seed": 42,
+    "epochs": 1000,
+    "learning_rate": 0.0002,
     "betas": [
       0.8,
       0.99
@@ -12,13 +12,13 @@
     "eps": 1e-09,
     "batch_size": 32,
     "fp16_run": false,
-    "lr_decay": 0.999875,
+    "lr_decay": 0.99995,
     "segment_size": 16384,
     "init_lr_ratio": 1,
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
-    "keep_ckpts":-1,
+    "keep_ckpts":5,
     "skip_optimizer": true
   },
   "data": {
@@ -4010,5 +4010,6 @@
     "n_layers_q": 3,
     "use_spectral_norm": false,
     "gin_channels": 256
-  }
+  },
+  "version": "2.0"
 }

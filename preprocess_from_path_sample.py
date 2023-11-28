@@ -202,8 +202,8 @@ def main(
     global bd_dict
     global role_dict
 
-    bd_dict = badcase_spk_path_dict("./badcase_spk_path_dict.txt")
-    role_dict = role_onlie_dict("./role_online.txt")
+    bd_dict = badcase_spk_path_dict("./dict/badcase_spk_path_dict.txt")
+    role_dict = role_onlie_dict("./dict/role_online.txt")
 
     if clean:
         extract_files_content(base_path, cleaned_path, language, 6, bd_dict)

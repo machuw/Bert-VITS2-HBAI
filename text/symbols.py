@@ -1,5 +1,4 @@
-#punctuation = ["!", "!!", "?", "??", "…", ",", ".", "'", "-", "--"]
-punctuation = ["!","?","…", ",", ".", "'","-"]
+punctuation = ["!", "?", "…", ",", ".", "'", "-"]
 pu_symbols = punctuation + ["SP", "UNK"]
 pad = "_"
 
@@ -118,7 +117,7 @@ ja_symbols = [
     "z",
     "zy",
 ]
-num_ja_tones = 1
+num_ja_tones = 2
 
 # English
 en_symbols = [

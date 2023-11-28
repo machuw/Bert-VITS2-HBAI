@@ -1,49 +1,18 @@
-import torch
 import sys
-from transformers import AutoTokenizer, AutoModelForMaskedLM
-import re
 
-tokenizer = AutoTokenizer.from_pretrained("./bert/chinese-roberta-wwm-ext-large")
+import torch
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+import re
+from config import config
+
+LOCAL_PATH = "./bert/chinese-roberta-wwm-ext-large"
+
+tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
 
 models = dict()
 
-class ContinuousHyphenChecker:
-    def __init__(self):
-        self.hyphen_count = 0
-        self.wenhao_count = 0
-        self.gantan_count = 0
 
-    def is_second_hyphen(self, item):
-        if item == "-":
-            self.hyphen_count += 1
-            if self.hyphen_count == 2:
-                self.hyphen_count = 0  # 重置计数器
-                return True
-        else:
-            self.hyphen_count = 0  # 如果不是"-"，则重置计数器
-        return False
-
-    def is_second_gantan(self, item):
-        if item == "!":
-            self.gantan_count += 1
-            if self.gantan_count == 2:
-                self.gantan_count = 0  # 重置计数器
-                return True
-        else:
-            self.gantan_count = 0  # 如果不是"-"，则重置计数器
-        return False
-    
-    def is_second_wenhao(self, item):
-        if item == "?":
-            self.wenhao_count += 1
-            if self.wenhao_count == 2:
-                self.wenhao_count = 0  # 重置计数器
-                return True
-        else:
-            self.wenhao_count = 0  # 如果不是"-"，则重置计数器
-        return False
-
-def get_bert_feature(text, word2ph, device=None):
+def get_bert_feature(text, word2ph, device=config.bert_gen_config.device):
     if (
         sys.platform == "darwin"
         and torch.backends.mps.is_available()
@@ -53,10 +22,7 @@ def get_bert_feature(text, word2ph, device=None):
     if not device:
         device = "cuda"
     if device not in models.keys():
-        models[device] = AutoModelForMaskedLM.from_pretrained(
-            "./bert/chinese-roberta-wwm-ext-large"
-        ).to(device)
-
+        models[device] = AutoModelForMaskedLM.from_pretrained(LOCAL_PATH).to(device)
     with torch.no_grad():
         tokens = tokenizer.tokenize(text)
         inputs = tokenizer(text, return_tensors="pt")
@@ -92,8 +58,6 @@ def get_bert_feature(text, word2ph, device=None):
 
 
 if __name__ == "__main__":
-    import torch
-
     word_level_feature = torch.rand(38, 1024)  # 12个词,每个词1024维特征
     word2phone = [
         1,

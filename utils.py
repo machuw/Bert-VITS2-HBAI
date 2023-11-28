@@ -3,14 +3,45 @@ import glob
 import argparse
 import logging
 import json
+import shutil
 import subprocess
 import numpy as np
+from huggingface_hub import hf_hub_download
 from scipy.io.wavfile import read
 import torch
+import re
 
 MATPLOTLIB_FLAG = False
 
 logger = logging.getLogger(__name__)
+
+
+def download_checkpoint(
+    dir_path, repo_config, token=None, regex="G_*.pth", mirror="openi"
+):
+    repo_id = repo_config["repo_id"]
+    f_list = glob.glob(os.path.join(dir_path, regex))
+    if f_list:
+        print("Use existed model, skip downloading.")
+        return
+    if mirror.lower() == "openi":
+        import openi
+
+        kwargs = {"token": token} if token else {}
+        openi.login(**kwargs)
+
+        model_image = repo_config["model_image"]
+        openi.model.download_model(repo_id, model_image, dir_path)
+
+        fs = glob.glob(os.path.join(dir_path, model_image, "*.pth"))
+        for file in fs:
+            shutil.move(file, dir_path)
+        shutil.rmtree(os.path.join(dir_path, model_image))
+    else:
+        for file in ["DUR_0.pth", "D_0.pth", "G_0.pth"]:
+            hf_hub_download(
+                repo_id, file, local_dir=dir_path, local_dir_use_symlinks=False
+            )
 
 
 def load_checkpoint(checkpoint_path, model, optimizer=None, skip_optimizer=False):
@@ -71,7 +102,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, skip_optimizer=False
     return model, optimizer, learning_rate, iteration
 
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
+def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path, loss=None):
     logger.info(
         "Saving model and optimizer state at iteration {} to {}".format(
             iteration, checkpoint_path
@@ -90,7 +121,30 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         },
         checkpoint_path,
     )
-
+    # 如果当前模型的损失低于最低损失，或者这是第一次保存模型（即best_loss为None）
+    best_checkpoint_path = re.sub(r'_\d+\.pth', '_best.pth', checkpoint_path)
+    best_loss = None
+    if os.path.isfile(best_checkpoint_path):
+        best_checkpoint_dict = torch.load(best_checkpoint_path, map_location="cpu")
+        best_loss = best_checkpoint_dict["loss"]
+    if best_loss is None or loss < best_loss:
+        logger.info(
+            "Saving best model and optimizer state at iteration {} to {}".format(
+                iteration, best_checkpoint_path
+            )
+        )
+        torch.save(
+            {
+                "model": state_dict,
+                "iteration": iteration,
+                "optimizer": optimizer.state_dict(),
+                "learning_rate": learning_rate,
+                "loss": loss,
+            },
+            best_checkpoint_path,
+        )
+        best_loss = loss  # 更新最低损失
+    return best_loss  # 返回最低损失，以便在下一次调用save_checkpoint时使用
 
 def summarize(
     writer,
@@ -195,28 +249,7 @@ def get_hparams(init=True):
         default="./configs/base.json",
         help="JSON file for configuration",
     )
-    parser.add_argument(
-        "-m", 
-        "--model", 
-        type=str, 
-        default="./OUTPUT_MODEL",
-        help="Model name",
-    )
-
-    parser.add_argument(
-        "--cont", 
-        dest="cont", 
-        #action="store_true", 
-        default=False, 
-        help="whether to continue training on the latest checkpoint",
-    )
-
-    parser.add_argument(
-        "--local-rank", 
-        type=int, 
-        default=0,
-        help="local rank by pytorch",
-    )
+    parser.add_argument("-m", "--model", type=str, required=True, help="Model name")
 
     args = parser.parse_args()
     model_dir = os.path.join("./logs", args.model)
@@ -227,19 +260,16 @@ def get_hparams(init=True):
     config_path = args.config
     config_save_path = os.path.join(model_dir, "config.json")
     if init:
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             data = f.read()
-        with open(config_save_path, "w") as f:
+        with open(config_save_path, "w", encoding="utf-8") as f:
             f.write(data)
     else:
-        with open(config_save_path, "r") as f:
+        with open(config_save_path, "r", vencoding="utf-8") as f:
             data = f.read()
     config = json.loads(data)
-
     hparams = HParams(**config)
     hparams.model_dir = model_dir
-    hparams.cont = args.cont
-    hparams.local_rank = args.local_rank
     return hparams
 
 
@@ -300,6 +330,7 @@ def get_hparams_from_dir(model_dir):
 
 
 def get_hparams_from_file(config_path):
+    # print("config_path: ", config_path)
     with open(config_path, "r", encoding="utf-8") as f:
         data = f.read()
     config = json.loads(data)
